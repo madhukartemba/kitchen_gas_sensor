@@ -1,0 +1,157 @@
+substitutions:
+  device_id: "0"
+
+esphome:
+  name: kitchen-gas-io-test-${device_id}
+  friendly_name: Kitchen Gas IO Test ${device_id}
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+# ----------------------------
+# Inputs under test
+# ----------------------------
+sensor:
+  # MQ-6 analog input on GPIO0
+  - platform: adc
+    pin: GPIO0
+    name: "Test ADC Gas Raw"
+    id: adc_gas_raw
+    attenuation: 12db
+    update_interval: 500ms
+    filters:
+      - sliding_window_moving_average:
+          window_size: 8
+          send_every: 4
+
+  # Helpful diagnostic: uptime
+  - platform: uptime
+    name: "Test Uptime"
+
+binary_sensor:
+  # Physical button input on GPIO3
+  - platform: gpio
+    pin:
+      number: GPIO3
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Test Reset Button"
+    id: test_button
+    on_press:
+      then:
+        - logger.log: "Button pressed"
+        - script.execute: button_feedback
+    on_release:
+      then:
+        - logger.log: "Button released"
+
+# ----------------------------
+# Outputs under test
+# ----------------------------
+output:
+  - platform: gpio
+    pin: GPIO4
+    id: buzzer_out
+
+switch:
+  # Direct manual buzzer control from HA
+  - platform: output
+    name: "Test Buzzer"
+    id: test_buzzer
+    output: buzzer_out
+
+light:
+  # NeoPixel on GPIO5
+  - platform: esp32_rmt_led_strip
+    pin: GPIO5
+    num_leds: 1
+    rgb_order: GRB
+    chipset: ws2812
+    name: "Test Status LED"
+    id: test_led
+    effects:
+      - pulse:
+      - random:
+
+button:
+  # Run a full output test sequence from HA
+  - platform: template
+    name: "Run Full IO Output Test"
+    on_press:
+      then:
+        - script.execute: run_output_test
+
+script:
+  # Short feedback when physical button is pressed
+  - id: button_feedback
+    mode: restart
+    then:
+      - switch.turn_on: test_buzzer
+      - light.turn_on:
+          id: test_led
+          red: 0%
+          green: 0%
+          blue: 100%
+          brightness: 40%
+      - delay: 200ms
+      - switch.turn_off: test_buzzer
+      - light.turn_off: test_led
+
+  # Verifies all outputs in one sequence
+  - id: run_output_test
+    mode: single
+    then:
+      - logger.log: "Starting output test sequence"
+      - switch.turn_on: test_buzzer
+      - delay: 300ms
+      - switch.turn_off: test_buzzer
+      - delay: 200ms
+      - switch.turn_on: test_buzzer
+      - delay: 300ms
+      - switch.turn_off: test_buzzer
+
+      - light.turn_on:
+          id: test_led
+          red: 100%
+          green: 0%
+          blue: 0%
+          brightness: 100%
+      - delay: 500ms
+      - light.turn_on:
+          id: test_led
+          red: 0%
+          green: 100%
+          blue: 0%
+          brightness: 100%
+      - delay: 500ms
+      - light.turn_on:
+          id: test_led
+          red: 0%
+          green: 0%
+          blue: 100%
+          brightness: 100%
+      - delay: 500ms
+      - light.turn_off: test_led
+      - logger.log: "Output test sequence complete"
+
+interval:
+  # Periodic ADC + button state logging for input validation
+  - interval: 5s
+    then:
+      - lambda: |-
+          ESP_LOGI("io_test", "ADC=%.3f V, button=%s",
+                   id(adc_gas_raw).state,
+                   id(test_button).state ? "PRESSED" : "RELEASED");
