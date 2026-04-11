@@ -45,15 +45,6 @@ text_sensor:
     name: "Gas Sensor State"
     id: sensor_state
     update_interval: 1s
-    lambda: |-
-      switch(get_processor()->getState()) {
-        case WARMUP: return std::string("Warmup");
-        case NORMAL: return std::string("Normal");
-        case ALARM: return std::string("Alarm");
-        case COOLDOWN: return std::string("Cooldown");
-        case ERROR: return std::string("Error");
-      }
-      return std::string("Unknown");
 
 # Threshold slider (Home Assistant)
 number:
