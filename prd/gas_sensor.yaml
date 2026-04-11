@@ -19,6 +19,7 @@ esphome:
         - delay: 1s
         - switch.turn_off: buzzer
         - light.turn_off: status_led
+        - lambda: 'id(self_test_done) = true;'
     - priority: -10
       then:
         - lambda: |-
@@ -70,6 +71,15 @@ text_sensor:
     name: "Gas Sensor State"
     id: sensor_state
     update_interval: 1s
+    lambda: |-
+      switch (get_processor()->getState()) {
+        case WARMUP: return std::string("Warmup");
+        case NORMAL: return std::string("Normal");
+        case ALARM: return std::string("Alarm");
+        case COOLDOWN: return std::string("Cooldown");
+        case ERROR: return std::string("Error");
+      }
+      return std::string("Unknown");
 
 # Threshold slider (Home Assistant)
 number:
@@ -226,8 +236,8 @@ light:
           name: "Slow Breathe"
           transition_length: 4s
           update_interval: 4s  
-          min_brightness: 20%
-          max_brightness: 40%
+          min_brightness: 10%
+          max_brightness: 30%
       - strobe:
           name: "Alarm Flash"
           colors:
@@ -251,7 +261,6 @@ light:
 interval:
   - interval: 1s
     then:
-      # ADDED: Skip this entire loop until the self-test is done
       - if:
           condition:
             lambda: 'return id(self_test_done);'

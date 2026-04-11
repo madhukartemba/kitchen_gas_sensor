@@ -13,15 +13,15 @@ enum SensorState {
 inline const char *sensorStateStr(SensorState s) {
   switch (s) {
   case WARMUP:
-    return "warmup";
+    return "Warmup";
   case NORMAL:
-    return "normal";
+    return "Normal";
   case ALARM:
-    return "alarm";
+    return "Alarm";
   case COOLDOWN:
-    return "cooldown";
+    return "Cooldown";
   case ERROR:
-    return "error";
+    return "Error";
   default:
     return "?";
   }
@@ -101,7 +101,8 @@ public:
     }
   }
 
-  // Milliseconds from boot until warmup ends (compared to millis() in update()).
+  // Milliseconds from boot until warmup ends (compared to millis() in
+  // update()).
   unsigned long getWarmupTimeMs() const { return warmupTime; }
 
   void setWarmupTimeMs(unsigned long ms) { warmupTime = ms; }
