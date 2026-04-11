@@ -152,15 +152,15 @@ light:
       - pulse:
           name: "Breathe"
           transition_length: 1s
-          update_interval: 1250ms
+          update_interval: 1s  
           min_brightness: 35%
           max_brightness: 100%
       - pulse:
           name: "Slow Breathe"
           transition_length: 4s
-          update_interval: 4500ms
-          min_brightness: 30%
-          max_brightness: 50%
+          update_interval: 4s  
+          min_brightness: 10%
+          max_brightness: 60%
       - strobe:
           name: "Alarm Flash"
           colors:
@@ -186,8 +186,6 @@ interval:
     then:
       - lambda: |-
           get_processor()->update(id(gas_sensor).state, millis());
-      
-      # (Assuming you added sensorStateStr and getRelativeReading to your C++!)
       - logger.log:
           tag: gasSensorProcessor
           format: "state=%s reading=%.3f relativeReading=%.3f"
@@ -199,11 +197,9 @@ interval:
       - lambda: |-
           SensorState current_state = get_processor()->getState();
           
-          // ADDED: Static variables to track state changes
-          static SensorState previous_state = ERROR; // Start with a dummy state
+          static SensorState previous_state = ERROR;
           static bool first_run = true;
 
-          // Only update the LED if the state has changed!
           if (current_state != previous_state || first_run) {
             first_run = false;
             previous_state = current_state;

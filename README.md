@@ -15,6 +15,9 @@ This is a kitchen gas sensor using ESPHome. It detects gas leaks using an MQ-6 s
 
 ## 🚀 Setup & Build
 
+ESPHome version used: 2026.1.5
+Python version used: 3.12.10
+
 ### ✅ Run
 ```bash
 python -m esphome -s device_id 0 run gas_sensor.yaml
