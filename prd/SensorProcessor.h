@@ -79,8 +79,7 @@ public:
 
       double readingDiff = reading - readings.front();
 
-      if (readings.size() >= numberOfReadings &&
-          readingDiff > relativeThreshold) {
+      if (readingDiff > relativeThreshold) {
         setState(ALARM, timestamp);
       } else if (reading > absoluteThreshold) {
         setState(ALARM, timestamp);
