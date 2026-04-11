@@ -169,6 +169,20 @@ switch:
     output: buzzer_out
     internal: true # Hides from Home Assistant
 
+script:
+  - id: alarm_beep_loop
+    mode: restart
+    then:
+      - while:
+          condition:
+            lambda: |-
+              return get_processor()->getState() == ALARM;
+          then:
+            - switch.turn_on: buzzer
+            - delay: 250ms
+            - switch.turn_off: buzzer
+            - delay: 550ms
+
 
 # Virtual reset button - Exposed to HA
 button:
@@ -177,6 +191,7 @@ button:
     id: reset_button_virtual
     on_press:
       then:
+        - script.stop: alarm_beep_loop
         - lambda: 'get_processor()->resetAlarm(millis());'
 
 # 🔘 Physical reset button
@@ -207,6 +222,7 @@ binary_sensor:
             condition:
               binary_sensor.is_on: reset_button_phys
             then:
+              - script.stop: alarm_beep_loop
               - lambda: 'get_processor()->resetAlarm(millis());'
               - switch.turn_off: buzzer
               - delay: 50ms
@@ -290,12 +306,13 @@ interval:
                   previous_state = current_state;
 
                   if (current_state == ALARM) {
-                    id(buzzer).turn_on();
+                    id(alarm_beep_loop).execute();
                     auto call = id(status_led).turn_on();
                     call.set_effect("Alarm Flash");
                     call.perform();
                     
                   } else if (current_state == WARMUP) {
+                    id(alarm_beep_loop).stop();
                     id(buzzer).turn_off();
                     auto call = id(status_led).turn_on();
                     call.set_rgb(1.0, 0.5, 0.0); // Orange
@@ -305,6 +322,7 @@ interval:
                     call.perform();
                     
                   } else if (current_state == COOLDOWN) {
+                    id(alarm_beep_loop).stop();
                     id(buzzer).turn_off();
                     auto call = id(status_led).turn_on();
                     call.set_rgb(0.0, 0.0, 1.0); // Blue
@@ -314,6 +332,7 @@ interval:
                     call.perform();
                     
                   } else { // NORMAL
+                    id(alarm_beep_loop).stop();
                     id(buzzer).turn_off();
                     auto call = id(status_led).turn_on();
                     call.set_rgb(0.0, 1.0, 0.0); // Green
