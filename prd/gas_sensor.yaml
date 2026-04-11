@@ -10,6 +10,7 @@ esphome:
         - lambda: |-
             get_processor()->setAbsoluteThreshold(id(gas_threshold).state);
             get_processor()->setRelativeThreshold(id(gas_rel_threshold).state);
+            get_processor()->setNumberOfReadings(static_cast<int>(id(gas_reading_count).state));
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -82,6 +83,20 @@ number:
       then:
         - lambda: "get_processor()->setRelativeThreshold(x);"
 
+  - platform: template
+    name: "Gas reading count"
+    id: gas_reading_count
+    min_value: 1
+    max_value: 3600
+    step: 1
+    initial_value: 300
+    restore_value: true
+    optimistic: true
+    mode: box
+    on_value:
+      then:
+        - lambda: "get_processor()->setNumberOfReadings(static_cast<int>(x));"
+
 # 🔊 Buzzer (Internal only)
 output:
   - platform: gpio
@@ -145,10 +160,14 @@ light:
           name: "Breathe"
           transition_length: 1s
           update_interval: 1s
+          min_brightness: 35%
+          max_brightness: 100%
       - pulse:
           name: "Slow Breathe"
           transition_length: 4s
           update_interval: 4s
+          min_brightness: 30%
+          max_brightness: 50%
       - strobe:
           name: "Alarm Flash"
           colors:
@@ -158,7 +177,11 @@ light:
               green: 0%
               blue: 0%
               duration: 250ms
-            - state: false
+            - state: true
+              brightness: 15%
+              red: 100%
+              green: 0%
+              blue: 0%
               duration: 250ms
 
 

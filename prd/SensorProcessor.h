@@ -89,6 +89,18 @@ public:
 
   void setRelativeThreshold(double value) { relativeThreshold = value; }
 
+  int getNumberOfReadings() const { return numberOfReadings; }
+
+  void setNumberOfReadings(int value) {
+    if (value < 1) {
+      value = 1;
+    }
+    numberOfReadings = value;
+    while (readings.size() > static_cast<size_t>(numberOfReadings)) {
+      readings.erase(readings.begin());
+    }
+  }
+
   void update(double reading, unsigned long timestamp) {
     if (state == WARMUP) {
       relativeReading = 0;
@@ -124,6 +136,6 @@ public:
 // Creates a single instance globally accessible from anywhere in ESPHome
 inline SensorProcessor *get_processor() {
   static SensorProcessor *instance =
-      new SensorProcessor(60000, 30000, 10, 1.5, 0.3);
+      new SensorProcessor(60000, 30000, 300, 1.5, 0.3);
   return instance;
 }
