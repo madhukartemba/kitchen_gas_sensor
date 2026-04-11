@@ -1,3 +1,6 @@
+substitutions:
+  device_id: "0"
+
 esphome:
   name: kitchen-gas-alarm-${device_id}
   friendly_name: Kitchen Gas Alarm ${device_id}
@@ -181,8 +184,8 @@ binary_sensor:
   - platform: gpio
     pin:
       number: GPIO3
-      mode: INPUT
-      inverted: false
+      mode: ${ "INPUT_PULLUP" if device_id == "0" else "INPUT" }
+      inverted: ${ device_id == "0" }
     name: "Reset Button Physical"
     id: reset_button_phys
     internal: true # Hide the raw button presses from HA
