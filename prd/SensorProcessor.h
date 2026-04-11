@@ -65,7 +65,7 @@ private:
       }
       break;
     case COOLDOWN:
-      if (state != ALARM) {
+      if (state == ALARM) {
         state = newState;
         cooldownTimer = timestamp;
       }
