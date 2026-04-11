@@ -25,11 +25,11 @@ api:
 ota:
   - platform: esphome
 
-# 1. Analog sensor (MQ-6) - Exposed to HA
+# 1. Analog Gas Sensor - Exposed to HA
 sensor:
   - platform: adc
     pin: GPIO0
-    name: "MQ6 Gas Level"
+    name: "Gas Level"
     id: gas_sensor
     update_interval: 1s
     attenuation: 12db
@@ -143,13 +143,16 @@ interval:
   - interval: 1s
     then:
       - lambda: |-
-          // 1. Send the latest reading to the processor
           get_processor()->update(id(gas_sensor).state, millis());
-          
-          // 2. Fetch the state
+      - logger.log:
+          tag: gasSensorProcessor
+          format: "state=%s reading=%.3f relativeReading=%.3f"
+          args:
+            - "sensorStateStr(get_processor()->getState())"
+            - "id(gas_sensor).state"
+            - "get_processor()->getRelativeReading()"
+      - lambda: |-
           SensorState current_state = get_processor()->getState();
-
-          // 3. Handle physical outputs natively
           if (current_state == ALARM) {
             id(buzzer).turn_on();
             auto call = id(status_led).turn_on();
@@ -168,7 +171,7 @@ interval:
             call.set_rgb(0.0, 0.0, 1.0); // Blue
             call.set_brightness(0.3);
             call.perform();
-          } else { // Normal
+          } else {
             id(buzzer).turn_off();
             auto call = id(status_led).turn_on();
             call.set_rgb(0.0, 1.0, 0.0); // Green

@@ -10,6 +10,23 @@ enum SensorState {
   ERROR,
 };
 
+inline const char *sensorStateStr(SensorState s) {
+  switch (s) {
+  case WARMUP:
+    return "warmup";
+  case NORMAL:
+    return "normal";
+  case ALARM:
+    return "alarm";
+  case COOLDOWN:
+    return "cooldown";
+  case ERROR:
+    return "error";
+  default:
+    return "?";
+  }
+}
+
 class SensorProcessor {
 private:
   double readingSum;
@@ -22,6 +39,9 @@ private:
   // Thresholds
   double absoluteThreshold;
   double relativeThreshold;
+
+  // Last reading minus oldest sample in window (0 during warmup)
+  double relativeReading{0};
 
   // Timers
   unsigned long cooldownTimer;
@@ -45,7 +65,7 @@ private:
       }
       break;
     case COOLDOWN:
-      if (state != COOLDOWN) {
+      if (state != ALARM) {
         state = newState;
         cooldownTimer = timestamp;
       }
@@ -71,6 +91,7 @@ public:
 
   void update(double reading, unsigned long timestamp) {
     if (state == WARMUP) {
+      relativeReading = 0;
       if (timestamp > warmupTime) {
         setState(NORMAL, timestamp);
       }
@@ -81,9 +102,9 @@ public:
         readings.erase(readings.begin());
       }
 
-      double readingDiff = reading - readings.front();
+      relativeReading = reading - readings.front();
 
-      if (readingDiff > relativeThreshold) {
+      if (relativeReading > relativeThreshold) {
         setState(ALARM, timestamp);
       } else if (reading > absoluteThreshold) {
         setState(ALARM, timestamp);
@@ -93,7 +114,9 @@ public:
     }
   }
 
-  SensorState getState() { return state; }
+  SensorState getState() const { return state; }
+
+  double getRelativeReading() const { return relativeReading; }
 
   void resetAlarm(unsigned long timestamp) { setState(COOLDOWN, timestamp); }
 };
