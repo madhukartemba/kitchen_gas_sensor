@@ -101,6 +101,15 @@ public:
     }
   }
 
+  // Milliseconds from boot until warmup ends (compared to millis() in update()).
+  unsigned long getWarmupTimeMs() const { return warmupTime; }
+
+  void setWarmupTimeMs(unsigned long ms) { warmupTime = ms; }
+
+  unsigned long getCooldownTimeMs() const { return cooldownTime; }
+
+  void setCooldownTimeMs(unsigned long ms) { cooldownTime = ms; }
+
   void update(double reading, unsigned long timestamp) {
     if (state == WARMUP) {
       relativeReading = 0;

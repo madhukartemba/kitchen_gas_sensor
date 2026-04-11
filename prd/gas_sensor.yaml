@@ -11,6 +11,8 @@ esphome:
             get_processor()->setAbsoluteThreshold(id(gas_threshold).state);
             get_processor()->setRelativeThreshold(id(gas_rel_threshold).state);
             get_processor()->setNumberOfReadings(static_cast<int>(id(gas_reading_count).state));
+            get_processor()->setWarmupTimeMs(static_cast<unsigned long>(id(gas_warmup_seconds).state * 1000.0f));
+            get_processor()->setCooldownTimeMs(static_cast<unsigned long>(id(gas_cooldown_seconds).state * 1000.0f));
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -29,16 +31,18 @@ ota:
   - platform: esphome
 
 # 1. Analog Gas Sensor - Exposed to HA
+# 1. Analog Gas Sensor - Exposed to HA
 sensor:
   - platform: adc
     pin: GPIO0
     name: "Gas Level"
     id: gas_sensor
-    update_interval: 1s
+    # Read the physical pin very fast (5 times a second)
+    update_interval: 200ms 
     attenuation: 12db
     filters:
       - sliding_window_moving_average:
-          window_size: 10
+          window_size: 5
           send_every: 5
 
 # 3. Sensor State - Exposed to HA
@@ -89,6 +93,36 @@ number:
     on_value:
       then:
         - lambda: "get_processor()->setNumberOfReadings(static_cast<int>(x));"
+
+  - platform: template
+    name: "Gas warmup duration"
+    id: gas_warmup_seconds
+    unit_of_measurement: "s"
+    min_value: 0
+    max_value: 600
+    step: 1
+    initial_value: 60
+    restore_value: true
+    optimistic: true
+    mode: box
+    on_value:
+      then:
+        - lambda: "get_processor()->setWarmupTimeMs(static_cast<unsigned long>(x * 1000.0f));"
+
+  - platform: template
+    name: "Gas cooldown duration"
+    id: gas_cooldown_seconds
+    unit_of_measurement: "s"
+    min_value: 0
+    max_value: 600
+    step: 1
+    initial_value: 30
+    restore_value: true
+    optimistic: true
+    mode: box
+    on_value:
+      then:
+        - lambda: "get_processor()->setCooldownTimeMs(static_cast<unsigned long>(x * 1000.0f));"
 
 # 🔊 Buzzer (Internal only)
 output:
