@@ -87,7 +87,7 @@ text_sensor:
 # Threshold slider (Home Assistant)
 number:
   - platform: template
-    name: "Gas Threshold"
+    name: "Gas Absolute Threshold"
     id: gas_threshold
     min_value: 0.0
     max_value: 3.3
