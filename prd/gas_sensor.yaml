@@ -5,6 +5,21 @@ esphome:
   includes:
     - SensorProcessor.h
   on_boot:
+  # --- HARDWARE TEST ---
+    - priority: 600
+      then:
+        - switch.turn_on: buzzer
+        - light.turn_on:
+            id: status_led
+            red: 100%
+            green: 100%
+            blue: 100%
+            brightness: 100%
+            effect: "None"
+        - delay: 1s
+        - switch.turn_off: buzzer
+        - light.turn_off: status_led
+    # -------------------------------
     - priority: -10
       then:
         - lambda: |-
@@ -30,7 +45,6 @@ api:
 ota:
   - platform: esphome
 
-# 1. Analog Gas Sensor - Exposed to HA
 # 1. Analog Gas Sensor - Exposed to HA
 sensor:
   - platform: adc
