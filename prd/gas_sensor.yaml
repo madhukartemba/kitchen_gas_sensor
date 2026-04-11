@@ -77,8 +77,8 @@ binary_sensor:
   - platform: gpio
     pin:
       number: GPIO3
-      mode: INPUT_PULLUP
-      inverted: true
+      mode: INPUT
+      inverted: false
     name: "Reset Button"
     on_press:
       then:
