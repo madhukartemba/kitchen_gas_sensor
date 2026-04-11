@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <vector>
 
 enum SensorState {
@@ -57,13 +58,16 @@ private:
 
 public:
   SensorProcessor(unsigned long warmupTime, unsigned long cooldownTime,
-                  int numberOfReadings)
-      : warmupTime(warmupTime), cooldownTime(cooldownTime),
-        numberOfReadings(numberOfReadings) {
-    this->readingSum = 0;
-    setState(WARMUP, 0);
-    this->cooldownTimer = 0;
-  }
+                  int numberOfReadings, double absoluteThreshold,
+                  double relativeThreshold)
+      : readingSum(0), numberOfReadings(numberOfReadings),
+        warmupTime(warmupTime), cooldownTime(cooldownTime), state(WARMUP),
+        absoluteThreshold(absoluteThreshold),
+        relativeThreshold(relativeThreshold), cooldownTimer(0) {}
+
+  void setAbsoluteThreshold(double value) { absoluteThreshold = value; }
+
+  void setRelativeThreshold(double value) { relativeThreshold = value; }
 
   void update(double reading, unsigned long timestamp) {
     if (state == WARMUP) {
@@ -93,3 +97,10 @@ public:
 
   void resetAlarm(unsigned long timestamp) { setState(COOLDOWN, timestamp); }
 };
+
+// Creates a single instance globally accessible from anywhere in ESPHome
+inline SensorProcessor *get_processor() {
+  static SensorProcessor *instance =
+      new SensorProcessor(60000, 30000, 10, 1.5, 0.3);
+  return instance;
+}
