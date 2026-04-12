@@ -1,0 +1,27 @@
+alias: Gas Alarm
+description: >-
+  Triggers a critical, high-priority mobile push notification via the
+  Gas_Emergency channel when the kitchen gas sensor detects a leak, and links
+  directly to the kitchen dashboard.
+triggers:
+  - type: gas
+    device_id: your-entity-id
+    entity_id: your-device-id
+    domain: binary_sensor
+    metadata:
+      secondary: false
+    trigger: device
+conditions: []
+actions:
+  - action: notify.mobile_app_cphxxxx
+    metadata: {}
+    data:
+      title: "EMERGENCY: GAS LEAK 🚨"
+      message: Kitchen Gas Leak Detected!
+      data:
+        clickAction: /dashboard-home/3
+        ttl: 0
+        priority: high
+        color: red
+        channel: Gas_Emergency
+mode: single

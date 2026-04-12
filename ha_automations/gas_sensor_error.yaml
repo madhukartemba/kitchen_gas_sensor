@@ -1,0 +1,24 @@
+alias: Gas Sensor Error
+description: Notifies when the gas sensor hardware fails or disconnects.
+triggers:
+  - type: problem
+    device_id: your-device-id
+    entity_id: your-entity-id
+    domain: binary_sensor
+    trigger: device
+conditions: []
+actions:
+  - action: notify.mobile_app_cphxxxx
+    metadata: {}
+    data:
+      title: Gas Sensor Fault ⚠️
+      message: >-
+        The Kitchen Gas Sensor has reported a hardware error or disconnected.
+        Please check the device!
+      data:
+        clickAction: /dashboard-home/3
+        ttl: 0
+        priority: high
+        color: orange
+        channel: Device_Warnings
+mode: single
