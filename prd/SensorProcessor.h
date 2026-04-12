@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -45,6 +46,11 @@ private:
 
   // Timers
   unsigned long cooldownTimer;
+
+  // Below ~20 mV the divider/sensor is effectively open or shorted to ground.
+  // Clear only above 50 mV so a noisy reading at the edge does not flap ERROR.
+  static constexpr double kFaultVolts = 0.02;
+  static constexpr double kFaultClearVolts = 0.05;
 
   void setState(SensorState newState, unsigned long timestamp) {
     switch (newState) {
@@ -117,22 +123,35 @@ public:
       if (timestamp > warmupTime) {
         setState(NORMAL, timestamp);
       }
+      return;
+    }
+
+    if (!std::isfinite(reading) || reading < kFaultVolts) {
+      if (state != ERROR) {
+        readings.clear();
+        relativeReading = 0;
+      }
+      setState(ERROR, timestamp);
+      return;
+    }
+
+    if (state == ERROR && reading < kFaultClearVolts) {
+      return;
+    }
+
+    readings.push_back(reading);
+    if (readings.size() > numberOfReadings) {
+      readings.erase(readings.begin());
+    }
+
+    relativeReading = reading - readings.front();
+
+    if (relativeReading > relativeThreshold) {
+      setState(ALARM, timestamp);
+    } else if (reading > absoluteThreshold) {
+      setState(ALARM, timestamp);
     } else {
-      // Do the normal processing everytime
-      readings.push_back(reading);
-      if (readings.size() > numberOfReadings) {
-        readings.erase(readings.begin());
-      }
-
-      relativeReading = reading - readings.front();
-
-      if (relativeReading > relativeThreshold) {
-        setState(ALARM, timestamp);
-      } else if (reading > absoluteThreshold) {
-        setState(ALARM, timestamp);
-      } else {
-        setState(NORMAL, timestamp);
-      }
+      setState(NORMAL, timestamp);
     }
   }
 

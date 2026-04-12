@@ -183,6 +183,19 @@ script:
             - switch.turn_off: buzzer
             - delay: 550ms
 
+  - id: error_beep_loop
+    mode: restart
+    then:
+      - while:
+          condition:
+            lambda: |-
+              return get_processor()->getState() == ERROR;
+          then:
+            - switch.turn_on: buzzer
+            - delay: 120ms
+            - switch.turn_off: buzzer
+            - delay: 5s
+
 
 # Virtual reset button - Exposed to HA
 button:
@@ -230,6 +243,21 @@ binary_sensor:
               - delay: 80ms
               - switch.turn_off: buzzer
               - logger.log: "Alarm reset via long press"
+  # --- Native Home Assistant Gas Alarm ---
+  - platform: template
+    name: "Gas Leak Detected"
+    id: gas_leak_alarm
+    device_class: gas
+    lambda: |-
+      return get_processor()->getState() == ALARM;
+
+  # --- NEW: Native Home Assistant Hardware Error Alert ---
+  - platform: template
+    name: "Gas Sensor Fault"
+    id: gas_sensor_fault
+    device_class: problem
+    lambda: |-
+      return get_processor()->getState() == ERROR;
 
 
 # 🌈 NeoPixel (Internal only)
@@ -251,12 +279,26 @@ light:
           update_interval: 1s  
           min_brightness: 35%
           max_brightness: 100%
-      - pulse:
-          name: "Slow Breathe"
-          transition_length: 4s
-          update_interval: 4s  
-          min_brightness: 10%
-          max_brightness: 20%
+      - lambda:
+          name: "Status Pulse"
+          update_interval: 50ms
+          lambda: |-
+            static uint32_t cycle_start_ms = 0;
+            if (initial_run) {
+              cycle_start_ms = millis();
+            }
+            constexpr uint32_t k_hold_ms = 3000;
+            constexpr uint32_t k_blink_ms = 150;
+            constexpr uint32_t k_period_ms = k_hold_ms + k_blink_ms;
+            const uint32_t t = (millis() - cycle_start_ms) % k_period_ms;
+            const float br = (t < k_hold_ms) ? 0.10f : 0.20f;
+            auto call = id(status_led).turn_on();
+            call.set_transition_length(0);
+            call.set_rgb(0.0f, 1.0f, 0.0f);
+            call.set_brightness(br);
+            call.set_publish(false);
+            call.set_save(false);
+            call.perform();
       - strobe:
           name: "Alarm Flash"
           colors:
@@ -274,6 +316,30 @@ light:
               blue: 0%
               duration: 250ms
               transition_length: 80ms
+      - lambda:
+          name: "Fault Signal"
+          update_interval: 50ms
+          lambda: |-
+            static uint32_t cycle_start_ms = 0;
+            if (initial_run) {
+              cycle_start_ms = millis();
+            }
+            // Triple red flash, then long off — distinct from alarm strobe / normal pulse
+            constexpr uint32_t k_period_ms = 2500;
+            constexpr uint32_t on1 = 100;
+            constexpr uint32_t gap1 = 250;
+            constexpr uint32_t on2 = 350;
+            constexpr uint32_t gap2 = 500;
+            constexpr uint32_t on3 = 600;
+            const uint32_t t = (millis() - cycle_start_ms) % k_period_ms;
+            const bool lit = (t < on1) || (t >= gap1 && t < on2) || (t >= gap2 && t < on3);
+            auto call = id(status_led).turn_on();
+            call.set_transition_length(0);
+            call.set_rgb(1.0f, 0.0f, 0.0f);
+            call.set_brightness(lit ? 1.0f : 0.0f);
+            call.set_publish(false);
+            call.set_save(false);
+            call.perform();
 
 
 # 🚨 Primary Engine Logic
@@ -306,12 +372,14 @@ interval:
                   previous_state = current_state;
 
                   if (current_state == ALARM) {
+                    id(error_beep_loop).stop();
                     id(alarm_beep_loop).execute();
                     auto call = id(status_led).turn_on();
                     call.set_effect("Alarm Flash");
                     call.perform();
                     
                   } else if (current_state == WARMUP) {
+                    id(error_beep_loop).stop();
                     id(alarm_beep_loop).stop();
                     id(buzzer).turn_off();
                     auto call = id(status_led).turn_on();
@@ -321,7 +389,19 @@ interval:
                     call.set_effect("Breathe");       
                     call.perform();
                     
+                  } else if (current_state == ERROR) {
+                    id(alarm_beep_loop).stop();
+                    id(buzzer).turn_off();
+                    id(error_beep_loop).execute();
+                    auto call = id(status_led).turn_on();
+                    call.set_rgb(1.0, 0.0, 0.0);
+                    call.set_brightness(1.0);
+                    call.set_transition_length(0);
+                    call.set_effect("Fault Signal");
+                    call.perform();
+
                   } else if (current_state == COOLDOWN) {
+                    id(error_beep_loop).stop();
                     id(alarm_beep_loop).stop();
                     id(buzzer).turn_off();
                     auto call = id(status_led).turn_on();
@@ -332,13 +412,14 @@ interval:
                     call.perform();
                     
                   } else { // NORMAL
+                    id(error_beep_loop).stop();
                     id(alarm_beep_loop).stop();
                     id(buzzer).turn_off();
                     auto call = id(status_led).turn_on();
-                    call.set_rgb(0.0, 1.0, 0.0); // Green
-                    call.set_brightness(0.3);
-                    call.set_transition_length(2000); 
-                    call.set_effect("Slow Breathe");
+                    call.set_rgb(0.0, 1.0, 0.0);
+                    call.set_brightness(0.1);
+                    call.set_transition_length(0);
+                    call.set_effect("Status Pulse");
                     call.perform();
                   }
                 }
