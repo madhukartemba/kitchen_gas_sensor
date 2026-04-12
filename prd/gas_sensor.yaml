@@ -31,6 +31,8 @@ esphome:
             get_processor()->setNumberOfReadings(static_cast<int>(id(gas_reading_count).state));
             get_processor()->setWarmupTimeMs(static_cast<unsigned long>(id(gas_warmup_seconds).state * 1000.0f));
             get_processor()->setCooldownTimeMs(static_cast<unsigned long>(id(gas_cooldown_seconds).state * 1000.0f));
+            get_processor()->setFaultVolts(id(gas_fault_trip_volts).state);
+            get_processor()->setFaultClearVolts(id(gas_fault_clear_volts).state);
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -155,6 +157,34 @@ number:
     on_value:
       then:
         - lambda: "get_processor()->setCooldownTimeMs(static_cast<unsigned long>(x * 1000.0f));"
+
+  - platform: template
+    name: "Gas fault trip voltage"
+    id: gas_fault_trip_volts
+    unit_of_measurement: "V"
+    min_value: 0.0
+    max_value: 0.5
+    step: 0.001
+    initial_value: 0.02
+    restore_value: true
+    optimistic: true
+    on_value:
+      then:
+        - lambda: "get_processor()->setFaultVolts(x);"
+
+  - platform: template
+    name: "Gas fault clear voltage"
+    id: gas_fault_clear_volts
+    unit_of_measurement: "V"
+    min_value: 0.0
+    max_value: 0.5
+    step: 0.001
+    initial_value: 0.05
+    restore_value: true
+    optimistic: true
+    on_value:
+      then:
+        - lambda: "get_processor()->setFaultClearVolts(x);"
 
 # 🔊 Buzzer (Internal only)
 output:

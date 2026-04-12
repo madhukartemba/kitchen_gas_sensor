@@ -13,7 +13,7 @@ triggers:
     trigger: device
 conditions: []
 actions:
-  - action: notify.mobile_app_cphxxxx
+  - action: notify.notify
     metadata: {}
     data:
       title: "EMERGENCY: GAS LEAK 🚨"

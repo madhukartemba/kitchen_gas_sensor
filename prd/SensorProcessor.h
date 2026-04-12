@@ -49,8 +49,8 @@ private:
 
   // Below ~20 mV the divider/sensor is effectively open or shorted to ground.
   // Clear only above 50 mV so a noisy reading at the edge does not flap ERROR.
-  static constexpr double kFaultVolts = 0.02;
-  static constexpr double kFaultClearVolts = 0.05;
+  double faultVolts;
+  double faultClearVolts;
 
   void setState(SensorState newState, unsigned long timestamp) {
     switch (newState) {
@@ -85,11 +85,13 @@ private:
 public:
   SensorProcessor(unsigned long warmupTime, unsigned long cooldownTime,
                   int numberOfReadings, double absoluteThreshold,
-                  double relativeThreshold)
+                  double relativeThreshold, double faultVolts = 0.02,
+                  double faultClearVolts = 0.05)
       : readingSum(0), numberOfReadings(numberOfReadings),
         warmupTime(warmupTime), cooldownTime(cooldownTime), state(WARMUP),
         absoluteThreshold(absoluteThreshold),
-        relativeThreshold(relativeThreshold), cooldownTimer(0) {}
+        relativeThreshold(relativeThreshold), cooldownTimer(0),
+        faultVolts(faultVolts), faultClearVolts(faultClearVolts) {}
 
   void setAbsoluteThreshold(double value) { absoluteThreshold = value; }
 
@@ -117,6 +119,14 @@ public:
 
   void setCooldownTimeMs(unsigned long ms) { cooldownTime = ms; }
 
+  double getFaultVolts() const { return faultVolts; }
+
+  void setFaultVolts(double value) { faultVolts = value; }
+
+  double getFaultClearVolts() const { return faultClearVolts; }
+
+  void setFaultClearVolts(double value) { faultClearVolts = value; }
+
   void update(double reading, unsigned long timestamp) {
     if (state == WARMUP) {
       relativeReading = 0;
@@ -126,7 +136,7 @@ public:
       return;
     }
 
-    if (!std::isfinite(reading) || reading < kFaultVolts) {
+    if (!std::isfinite(reading) || reading < faultVolts) {
       if (state != ERROR) {
         readings.clear();
         relativeReading = 0;
@@ -135,7 +145,7 @@ public:
       return;
     }
 
-    if (state == ERROR && reading < kFaultClearVolts) {
+    if (state == ERROR && reading < faultClearVolts) {
       return;
     }
 
