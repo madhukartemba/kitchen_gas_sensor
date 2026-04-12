@@ -93,6 +93,7 @@ number:
     id: gas_threshold
     min_value: 0.0
     max_value: 3.3
+    unit_of_measurement: "V"
     step: 0.01
     initial_value: 1.5
     restore_value: true
@@ -106,6 +107,7 @@ number:
     id: gas_rel_threshold
     min_value: 0.0
     max_value: 3.3
+    unit_of_measurement: "V"
     step: 0.01
     initial_value: 0.3
     restore_value: true
