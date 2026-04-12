@@ -270,9 +270,13 @@ binary_sensor:
               - script.stop: alarm_beep_loop
               - lambda: 'get_processor()->resetAlarm(millis());'
               - switch.turn_off: buzzer
-              - delay: 50ms
+              - delay: 15ms
               - switch.turn_on: buzzer
-              - delay: 80ms
+              - delay: 35ms
+              - switch.turn_off: buzzer
+              - delay: 22ms
+              - switch.turn_on: buzzer
+              - delay: 35ms
               - switch.turn_off: buzzer
               - logger.log: "Alarm reset via long press"
   # --- Native Home Assistant Gas Alarm ---
@@ -283,7 +287,7 @@ binary_sensor:
     lambda: |-
       return get_processor()->getState() == ALARM;
 
-  # --- NEW: Native Home Assistant Hardware Error Alert ---
+  # --- Native Home Assistant Hardware Error Alert ---
   - platform: template
     name: "Gas Sensor Fault"
     id: gas_sensor_fault
