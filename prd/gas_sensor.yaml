@@ -287,7 +287,7 @@ light:
             if (initial_run) {
               cycle_start_ms = millis();
             }
-            constexpr uint32_t k_hold_ms = 3000;
+            constexpr uint32_t k_hold_ms = 6000;
             constexpr uint32_t k_blink_ms = 150;
             constexpr uint32_t k_period_ms = k_hold_ms + k_blink_ms;
             const uint32_t t = (millis() - cycle_start_ms) % k_period_ms;
